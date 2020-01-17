@@ -9,7 +9,7 @@ Camera::Camera() :
   m_rotation(0, 0, 0),
   m_lookAt(0,0,0)
 {
-  SetPosition(50, 1, 10);
+  SetPosition(50, 5, 10);
   SetLookAtPos(0, 0, 1);
 }
 

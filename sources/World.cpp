@@ -11,23 +11,18 @@ World::World(ID3D11Device* device, ID3D11DeviceContext* context) :
   m_vertexCount(0),
   m_indexCount(0)
 {
-  uint16_t terrainHeight = 256;
-  uint16_t terrainWidth = 256;
-
-  XMFLOAT4 color(1.0f, 1.0f, 1.0f, 1.0f);
-
   vector<VertexType> vertices;
   vector<uint32_t> indices;
 
-  for (uint16_t z = 0; z != 100; z++)
-    for (uint16_t x = 0; x != 100; x++)
+  for (uint32_t z = 0; z < 257; z++)
+    for (uint32_t x = 0; x < 257; x++)
     {
       vertices.push_back({ {(float)x    , 0, (float)z}, {0, 1} }); // 0 0
       vertices.push_back({ {(float)x    , 0, (float)z + 1}, {0, 0} }); // 0 1
       vertices.push_back({ {(float)x + 1, 0, (float)z + 1}, {1, 0} }); // 1 1
       vertices.push_back({ {(float)x + 1, 0, (float)z}, {1, 1} }); // 1 0
 
-      uint16_t lastIndex = indices.empty() ? 0 : indices.back() + 1;
+      uint32_t lastIndex = indices.empty() ? 0 : indices.back() + 1;
       indices.push_back(lastIndex + 0);
       indices.push_back(lastIndex + 1);
       indices.push_back(lastIndex + 2);
@@ -70,11 +65,8 @@ World::World(ID3D11Device* device, ID3D11DeviceContext* context) :
   device->CreateBuffer(&indexBufferDesc, &indexData, &m_indexBuffer); // TUCNA HR
 
   // Texture
-  // TUCNA m_resource.GetAddressOf() is not needed can be nullpt
-  CreateWICTextureFromFileEx(device, context, L"resources/test.png", 0, D3D11_USAGE_DEFAULT, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE, 0, D3D11_RESOURCE_MISC_GENERATE_MIPS, WIC_LOADER_IGNORE_SRGB, m_resource.GetAddressOf(), m_shaderResourceView.GetAddressOf());
-
-
-  //CreateWICTextureFromFile(device, context, L"resources/test.png", m_resource.GetAddressOf(), m_shaderResourceView.GetAddressOf());
+  CreateWICTextureFromFile(device, context, L"resources/test.dds", nullptr, m_shaderResourceView.GetAddressOf());
+  CreateWICTextureFromFile(device, nullptr, L"resources/hm.dds", nullptr, m_heightMapResourceView.GetAddressOf());
 
   // Sampler
   D3D11_SAMPLER_DESC sampDesc = {};
@@ -105,4 +97,7 @@ void World::Draw(ID3D11DeviceContext* context)
 
   context->PSSetShaderResources(0, 1, m_shaderResourceView.GetAddressOf());
   context->PSSetSamplers(0, 1, m_samplerState.GetAddressOf());
+
+  context->VSSetShaderResources(0, 1, m_heightMapResourceView.GetAddressOf());
+  context->VSSetSamplers(0, 1, m_samplerState.GetAddressOf());
 }

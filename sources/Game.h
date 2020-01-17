@@ -5,6 +5,7 @@
 #pragma once
 
 #include <Keyboard.h>
+#include <Mouse.h>
 
 #include "Camera.h"
 #include "ShaderManager.h"
@@ -69,4 +70,5 @@ private:
   std::unique_ptr<ShaderManager> m_shaderManager;
   std::unique_ptr<Camera> m_camera;
   std::unique_ptr<DirectX::Keyboard> m_keyboard;
+  std::unique_ptr<DirectX::Mouse> m_mouse;
 };

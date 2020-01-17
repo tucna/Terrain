@@ -34,6 +34,7 @@ void Game::Initialize(HWND window, int width, int height)
   m_shaderManager = std::make_unique<ShaderManager>(m_d3dDevice.Get());
   m_camera = std::make_unique<Camera>();
   m_keyboard = std::make_unique<Keyboard>();
+  m_mouse = std::make_unique<Mouse>();
 
   m_camera->SetProjectionValues(75.0f, static_cast<float>(m_outputWidth) / static_cast<float>(m_outputHeight), 0.1f, 1000.0f);
 

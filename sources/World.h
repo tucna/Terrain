@@ -20,10 +20,10 @@ private:
   Microsoft::WRL::ComPtr<ID3D11Buffer> m_vertexBuffer;
   Microsoft::WRL::ComPtr<ID3D11Buffer> m_indexBuffer;
 
-  Microsoft::WRL::ComPtr<ID3D11Resource>           m_resource; // TUCNA - this is probably not necessary to keep
   Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_shaderResourceView;
   Microsoft::WRL::ComPtr<ID3D11SamplerState>       m_samplerState;
 
+  Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_heightMapResourceView;
 
   uint32_t m_vertexCount;
   uint32_t m_indexCount;

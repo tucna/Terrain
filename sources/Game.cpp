@@ -36,6 +36,8 @@ void Game::Initialize(HWND window, int width, int height)
   m_keyboard = std::make_unique<Keyboard>();
   m_mouse = std::make_unique<Mouse>();
 
+  m_mouse->SetWindow(window);
+
   m_camera->SetProjectionValues(75.0f, static_cast<float>(m_outputWidth) / static_cast<float>(m_outputHeight), 0.1f, 1000.0f);
 
 
@@ -63,14 +65,39 @@ void Game::Update(DX::StepTimer const& timer)
 {
   float elapsedTime = float(timer.GetElapsedSeconds());
 
+  // Keyboard
   auto kb = m_keyboard->GetState();
 
   if (kb.W)
     m_camera->MoveForward();
+  else if (kb.S)
+    m_camera->MoveBackward();
   else if (kb.Q)
     m_camera->TurnLeft();
   else if (kb.E)
     m_camera->TurnRight();
+  else if (kb.R)
+    m_camera->TurnUp();
+  else if (kb.F)
+    m_camera->TurnDown();
+
+  // Mouse
+  auto mouse = m_mouse->GetState();
+
+  if (mouse.positionMode == Mouse::MODE_RELATIVE)
+  {
+    if (mouse.x > 0)
+      m_camera->TurnRight();
+    else if (mouse.x < 0)
+      m_camera->TurnLeft();
+
+    if (mouse.y > 0)
+      m_camera->TurnDown();
+    else if (mouse.y < 0)
+      m_camera->TurnUp();
+  }
+
+  m_mouse->SetMode(mouse.leftButton ? Mouse::MODE_RELATIVE : Mouse::MODE_ABSOLUTE); // TUCNA should be right button
 
   // TODO: Add your game logic here.
   elapsedTime;

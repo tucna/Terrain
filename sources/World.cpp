@@ -2,25 +2,85 @@
 
 #include <WICTextureLoader.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 #include "World.h"
+
+// TUCNA DELETE
+#include <iostream>
 
 using namespace DirectX;
 using namespace std;
 
 World::World(ID3D11Device* device, ID3D11DeviceContext* context) :
   m_vertexCount(0),
-  m_indexCount(0)
+  m_indexCount(0),
+  m_worldWidth(256),
+  m_worldHeight(256)
 {
+  int width = -1;
+  int height = -1;
+  int channels = -1;
+
+  uint8_t* image = stbi_load("resources/hm.png", &width, &height, &channels, STBI_grey);
+
   vector<VertexType> vertices;
   vector<uint32_t> indices;
 
-  for (uint32_t z = 0; z < 257; z++)
-    for (uint32_t x = 0; x < 257; x++)
+  float scaleX = (float)width / (float)m_worldWidth;
+  float scaleZ = (float)height / (float)m_worldHeight;
+
+  // Sample height map
+  vector<float> heights;
+  float HEIGHT_STEP = 3.0f;
+
+  for (uint32_t z = 0; z < m_worldHeight; z++)
+    for (uint32_t x = 0; x < m_worldWidth; x++)
     {
-      vertices.push_back({ {(float)x    , 0, (float)z}, {0, 1} }); // 0 0
-      vertices.push_back({ {(float)x    , 0, (float)z + 1}, {0, 0} }); // 0 1
-      vertices.push_back({ {(float)x + 1, 0, (float)z + 1}, {1, 0} }); // 1 1
-      vertices.push_back({ {(float)x + 1, 0, (float)z}, {1, 1} }); // 1 0
+      float h = image[(((int)truncf((z + 0) * scaleZ)) * height) + ((int)truncf((x + 0) * scaleX))] / 255.0f;
+      heights.push_back(h * HEIGHT_STEP);
+    }
+
+  // Vertices
+  float STEP = 0.1f;
+
+  float h;
+  float T;
+  float B;
+  float L;
+  float R;
+
+  // TUCNA - we should start from 0 till width -1
+  for (uint32_t z = 1; z < m_worldHeight - 2; z++)
+    for (uint32_t x = 1; x < m_worldWidth - 2; x++)
+    {
+      h = heights[((z + 0) * height) + (x + 0)];
+      T = heights[((z + 1) * height) + (x + 0)];
+      B = heights[((z - 1) * height) + (x + 0)];
+      L = heights[((z + 0) * height) + (x - 1)];
+      R = heights[((z + 0) * height) + (x + 1)];
+      vertices.push_back({ {(float)x * STEP, h, (float)z * STEP}, {0, 1}, {L - R, 2.0f, T - B} });
+
+      h = heights[((z + 1) * height) + (x + 0)];
+      T = heights[((z + 1 + 1) * height) + (x + 0)];
+      B = heights[((z - 1 + 1) * height) + (x + 0)];
+      L = heights[((z + 0 + 1) * height) + (x - 1)];
+      R = heights[((z + 0 + 1) * height) + (x + 1)];
+      vertices.push_back({ {(float)x * STEP, h, (float)z * STEP + STEP}, {0, 0}, {L - R, 2.0f, T - B} });
+
+      h = heights[((z + 1) * height) + (x + 1)];
+      T = heights[((z + 1 + 1) * height) + (x + 0 + 1)];
+      B = heights[((z - 1 + 1) * height) + (x + 0 + 1)];
+      L = heights[((z + 0 + 1) * height) + (x - 1 + 1)];
+      R = heights[((z + 0 + 1) * height) + (x + 1 + 1)];
+      vertices.push_back({ {(float)x * STEP + STEP, h, (float)z * STEP + STEP}, {1, 0}, {L - R, 2.0f, T - B} });
+
+      h = heights[((z + 0) * height) + (x + 1)];
+      T = heights[((z + 1) * height) + (x + 0 + 1)];
+      B = heights[((z - 1) * height) + (x + 0 + 1)];
+      L = heights[((z + 0) * height) + (x - 1 + 1)];
+      R = heights[((z + 0) * height) + (x + 1 + 1)];
+      vertices.push_back({ {(float)x * STEP + STEP, h, (float)z * STEP}, {1, 1}, {L - R, 2.0f, T - B} });
 
       uint32_t lastIndex = indices.empty() ? 0 : indices.back() + 1;
       indices.push_back(lastIndex + 0);
@@ -31,6 +91,30 @@ World::World(ID3D11Device* device, ID3D11DeviceContext* context) :
       indices.push_back(lastIndex + 3);
     }
 
+  stbi_image_free(image);
+
+  // Computation of the normals
+  /*
+      T
+    L O R
+      B
+  */
+  /*
+  for (uint32_t z = 1; z < m_worldHeight - 3; z++)
+    for (uint32_t x = 1; x < m_worldWidth - 3; x++)
+    {
+      float T = vertices[((z + 1) * m_worldHeight) + (x + 0)].position.y;
+      float B = vertices[((z - 1) * m_worldHeight) + (x + 0)].position.y;
+      float L = vertices[((z + 0) * m_worldHeight) + (x - 1)].position.y;
+      float R = vertices[((z + 0) * m_worldHeight) + (x + 1)].position.y;
+
+      vertices[(z * m_worldHeight) + x].normal.x = L - R;
+      vertices[(z * m_worldHeight) + x].normal.y = 2.0f;
+      vertices[(z * m_worldHeight) + x].normal.z = T - B;
+
+      // TODO: Normalization can be added
+    }
+    */
   m_vertexCount = vertices.size();
   m_indexCount = indices.size();
 
@@ -67,6 +151,7 @@ World::World(ID3D11Device* device, ID3D11DeviceContext* context) :
   // Texture
   CreateWICTextureFromFile(device, context, L"resources/test.dds", nullptr, m_shaderResourceView.GetAddressOf());
   CreateWICTextureFromFile(device, nullptr, L"resources/hm.dds", nullptr, m_heightMapResourceView.GetAddressOf());
+  CreateWICTextureFromFile(device, nullptr, L"resources/hm_n.dds", nullptr, m_normalMapResourceView.GetAddressOf());
 
   // Sampler
   D3D11_SAMPLER_DESC sampDesc = {};
@@ -99,5 +184,7 @@ void World::Draw(ID3D11DeviceContext* context)
   context->PSSetSamplers(0, 1, m_samplerState.GetAddressOf());
 
   context->VSSetShaderResources(0, 1, m_heightMapResourceView.GetAddressOf());
+  context->VSSetShaderResources(1, 1, m_normalMapResourceView.GetAddressOf());
+
   context->VSSetSamplers(0, 1, m_samplerState.GetAddressOf());
 }

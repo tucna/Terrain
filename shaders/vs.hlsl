@@ -3,6 +3,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 Texture2D hmTexture : register(t0);
+Texture2D nTexture : register(t1);
 SamplerState samplerState : register(s0);
 
 /////////////
@@ -23,13 +24,14 @@ struct VertexInputType
 {
   float4 position : POSITION;
   float2 texCoord : TEXCOORD;
+  float4 normal : NORMAL;
 };
 
 struct PixelInputType
 {
   float4 position : SV_POSITION;
   float2 texCoord : TEXCOORD;
-  float3 pos : POS;
+  float3 normal : NORMAL;
 };
 
 
@@ -44,14 +46,16 @@ PixelInputType ColorVertexShader(VertexInputType input)
   input.position.w = 1.0f;
 
   // Sample from chosen LOD level - 0
-  float4 height = hmTexture.SampleLevel(samplerState, float2(input.position.x / 257.0f, input.position.z / 257.0f), 0);
+  //float4 height = hmTexture.SampleLevel(samplerState, float2(input.position.x / 257.0f, input.position.z / 257.0f), 0);
+  //float3 normal = nTexture.SampleLevel(samplerState, float2(input.position.x / 257.0f, input.position.z / 257.0f), 0).xyz;
 
-  input.position.y = height.r * 12;
+  //input.position.y = height.r * 12;
 
   // Calculate the position of the vertex against the world, view, and projection matrices.
   output.position = mul(input.position, worldMatrix);
 
-  output.pos = output.position;
+  output.normal = mul(input.normal.xyz, (float3x3) worldMatrix);
+  output.normal = normalize(output.normal);
 
   output.position = mul(output.position, viewMatrix);
   output.position = mul(output.position, projectionMatrix);

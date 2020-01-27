@@ -6,14 +6,14 @@ using namespace DirectX;
 ShaderManager::ShaderManager(ID3D11Device* device)
 {
   Microsoft::WRL::ComPtr<ID3DBlob> vertexShaderBuffer;
-  D3DCompileFromFile(L"shaders/vs.hlsl", NULL, NULL, "ColorVertexShader", "vs_5_0", NULL, 0, &vertexShaderBuffer, NULL);
+  D3DCompileFromFile(L"shaders/vs.hlsl", NULL, NULL, "ColorVertexShader", "vs_5_0", D3DCOMPILE_DEBUG, 0, &vertexShaderBuffer, NULL);
   device->CreateVertexShader(vertexShaderBuffer->GetBufferPointer(), vertexShaderBuffer->GetBufferSize(), NULL, &m_vertexShader);
 
   Microsoft::WRL::ComPtr<ID3DBlob> pixelShaderBuffer;
-  D3DCompileFromFile(L"shaders/ps.hlsl", NULL, NULL, "ColorPixelShader", "ps_5_0", NULL, 0, &pixelShaderBuffer, NULL);
+  D3DCompileFromFile(L"shaders/ps.hlsl", NULL, NULL, "ColorPixelShader", "ps_5_0", D3DCOMPILE_DEBUG, 0, &pixelShaderBuffer, NULL);
   device->CreatePixelShader(pixelShaderBuffer->GetBufferPointer(), pixelShaderBuffer->GetBufferSize(), NULL, &m_pixelShader);
 
-  D3D11_INPUT_ELEMENT_DESC polygonLayout[2];
+  D3D11_INPUT_ELEMENT_DESC polygonLayout[3];
   polygonLayout[0].SemanticName = "POSITION";
   polygonLayout[0].SemanticIndex = 0;
   polygonLayout[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;
@@ -29,6 +29,14 @@ ShaderManager::ShaderManager(ID3D11Device* device)
   polygonLayout[1].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
   polygonLayout[1].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
   polygonLayout[1].InstanceDataStepRate = 0;
+
+  polygonLayout[2].SemanticName = "NORMAL";
+  polygonLayout[2].SemanticIndex = 0;
+  polygonLayout[2].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+  polygonLayout[2].InputSlot = 0;
+  polygonLayout[2].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+  polygonLayout[2].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+  polygonLayout[2].InstanceDataStepRate = 0;
 
   // Get a count of the elements in the layout.
   unsigned int numElements = sizeof(polygonLayout) / sizeof(polygonLayout[0]);

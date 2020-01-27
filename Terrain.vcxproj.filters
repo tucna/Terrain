@@ -31,6 +31,7 @@
     <ClInclude Include="sources\World.h">
       <Filter>Sources</Filter>
     </ClInclude>
+    <ClInclude Include="sources\stb_image.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="sources\Camera.cpp">
@@ -71,5 +72,8 @@
     <Image Include="resources\directx.ico">
       <Filter>Assets</Filter>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="shaders\ps.hlsl" />
   </ItemGroup>
 </Project>

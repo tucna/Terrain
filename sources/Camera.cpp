@@ -8,7 +8,8 @@ Camera::Camera() :
   m_position(0.0f, 0.0f, 0.0f),
   m_rotation(0, 0, 0)
 {
-  SetPosition(50, 5, 10);
+  //SetPosition(50, 5, 10);
+  SetPosition(0, 5, 0);
 
   m_forwardVector.x = 0;
   m_forwardVector.y = 0;

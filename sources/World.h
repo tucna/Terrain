@@ -15,6 +15,7 @@ private:
   {
     DirectX::XMFLOAT3 position;
     DirectX::XMFLOAT2 texCoord;
+    DirectX::XMFLOAT3 normal;
   };
 
   Microsoft::WRL::ComPtr<ID3D11Buffer> m_vertexBuffer;
@@ -24,8 +25,12 @@ private:
   Microsoft::WRL::ComPtr<ID3D11SamplerState>       m_samplerState;
 
   Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_heightMapResourceView;
+  Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_normalMapResourceView;
 
   uint32_t m_vertexCount;
   uint32_t m_indexCount;
+
+  uint16_t m_worldWidth;
+  uint16_t m_worldHeight;
 };
 

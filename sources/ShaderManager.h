@@ -6,7 +6,7 @@ public:
   ShaderManager(ID3D11Device* device);
   ~ShaderManager() {}
 
-  void ApplyColorShader(ID3D11DeviceContext* context, int indexCount, DirectX::XMMATRIX worldMatrix, DirectX::XMMATRIX viewMatrix, DirectX::XMMATRIX projectionMatrix);
+  void ApplyColorShader(ID3D11DeviceContext* context, size_t indexCount, DirectX::XMMATRIX worldMatrix, DirectX::XMMATRIX viewMatrix, DirectX::XMMATRIX projectionMatrix);
 
 private:
   struct MatrixBufferType // TUCNA rename to perFrame

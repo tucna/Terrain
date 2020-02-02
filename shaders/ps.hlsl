@@ -1,14 +1,6 @@
-////////////////////////////////////////////////////////////////////////////////
-// Filename: color.ps
-////////////////////////////////////////////////////////////////////////////////
-
-
 Texture2D tTexture : register(t0);
 SamplerState samplerState : register(s0);
 
-//////////////
-// TYPEDEFS //
-//////////////
 struct PixelInputType
 {
   float4 position : SV_POSITION;
@@ -17,22 +9,8 @@ struct PixelInputType
   float3 normal : NORMAL;
 };
 
-
-////////////////////////////////////////////////////////////////////////////////
-// Pixel Shader
-////////////////////////////////////////////////////////////////////////////////
 float4 ColorPixelShader(PixelInputType input) : SV_TARGET
 {
-  // Compute normals
-  //float3 normal = normalize(cross(ddx_fine(input.pos), ddy_fine(input.pos)));
-  /*
-  float3 normal = normalize(input.normal);
-
-  normal.x = normal.x * 2.0f - 1.0f;
-  normal.y = normal.y * 2.0f - 1.0f;
-  normal.z = -normal.z;
-  */
-
   input.texCoord = input.worldPosition.xz / 6.0f;
 
   float3 lightDirection = float3(-0.5f, -1.0f, -0.5f);

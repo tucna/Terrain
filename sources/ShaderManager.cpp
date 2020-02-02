@@ -56,15 +56,8 @@ ShaderManager::ShaderManager(ID3D11Device* device)
   device->CreateBuffer(&matrixBufferDesc, NULL, &m_matrixBuffer);
 }
 
-void ShaderManager::ApplyColorShader(ID3D11DeviceContext* context, int indexCount, XMMATRIX worldMatrix, XMMATRIX viewMatrix, XMMATRIX projectionMatrix)
+void ShaderManager::ApplyColorShader(ID3D11DeviceContext* context, size_t indexCount, XMMATRIX worldMatrix, XMMATRIX viewMatrix, XMMATRIX projectionMatrix)
 {
-  // Transpose the matrices to prepare them for the shader.
-  /* TUCNA
-  worldMatrix = XMMatrixTranspose(worldMatrix);
-  viewMatrix = XMMatrixTranspose(viewMatrix);
-  projectionMatrix = XMMatrixTranspose(projectionMatrix);
-  */
-
   // Lock the matrix constant buffer so it can be written to.
   D3D11_MAPPED_SUBRESOURCE mappedResource = {};
   context->Map(m_matrixBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource); // TUCNA HR
@@ -91,5 +84,5 @@ void ShaderManager::ApplyColorShader(ID3D11DeviceContext* context, int indexCoun
   context->PSSetShader(m_pixelShader.Get(), NULL, 0);
 
   // Render the data.
-  context->DrawIndexed(indexCount, 0, 0);
+  context->DrawIndexed((UINT)indexCount, 0, 0);
 }

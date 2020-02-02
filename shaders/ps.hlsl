@@ -12,6 +12,7 @@ SamplerState samplerState : register(s0);
 struct PixelInputType
 {
   float4 position : SV_POSITION;
+  float4 worldPosition : POSITION;
   float2 texCoord : TEXCOORD;
   float3 normal : NORMAL;
 };
@@ -31,6 +32,9 @@ float4 ColorPixelShader(PixelInputType input) : SV_TARGET
   normal.y = normal.y * 2.0f - 1.0f;
   normal.z = -normal.z;
   */
+
+  input.texCoord = input.worldPosition.xz / 6.0f;
+
   float3 lightDirection = float3(-0.5f, -1.0f, -0.5f);
   float3 lightDir = -lightDirection;
 
@@ -44,7 +48,7 @@ float4 ColorPixelShader(PixelInputType input) : SV_TARGET
   //float4 normalF = float4(input.normal, 1.0f);
   //normalF = normalF * 0.5f + 0.5f;
 
-  textureColor = float4(1,1,1,1);
+  //textureColor = float4(1,1,1,1);
 
   return lightColor * textureColor;
 }

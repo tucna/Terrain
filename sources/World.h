@@ -8,6 +8,9 @@ public:
 
   void Draw(ID3D11DeviceContext* context);
 
+  void Load8bHeightmap(ID3D11Device* device, ID3D11DeviceContext* context);
+  void Load16bHeightmap(ID3D11Device* device, ID3D11DeviceContext* context);
+
   int GetIndexCount() { return m_indexCount; }
 
 private:

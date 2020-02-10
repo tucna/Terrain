@@ -9,7 +9,8 @@ Camera::Camera() :
   m_forwardVector(0.0f, 0.0f, 0.0f),
   m_rotation(0, 0, 0)
 {
-  SetPosition(100, 50, 100);
+  SetPosition(0, 30, 0);
+  //SetPosition(100, 50, 100);
 }
 
 Camera::~Camera()

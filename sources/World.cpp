@@ -15,7 +15,9 @@ using namespace DirectX;
 using namespace std;
 
 World::World(ID3D11Device* device, ID3D11DeviceContext* context) :
-  m_indexCount(0)
+  m_indexCount(0),
+  m_numPatchesCols(0),
+  m_numPatchesRows(0)
 {
   Load16bHeightmap(device);
 
@@ -34,6 +36,14 @@ World::World(ID3D11Device* device, ID3D11DeviceContext* context) :
 
   //Create the sample state
   device->CreateSamplerState(&sampDesc, m_samplerState.GetAddressOf());
+
+  // TUCNA - wireframe
+  D3D11_RASTERIZER_DESC wfdesc = {};
+  wfdesc.FillMode = D3D11_FILL_WIREFRAME;
+  wfdesc.CullMode = D3D11_CULL_NONE;
+  device->CreateRasterizerState(&wfdesc, m_wireFrame.GetAddressOf());
+
+  context->RSSetState(m_wireFrame.Get());
 }
 
 void World::Draw(ID3D11DeviceContext* context)
@@ -42,12 +52,12 @@ void World::Draw(ID3D11DeviceContext* context)
   unsigned int offset;
 
   // Set vertex buffer stride and offset.
-  stride = sizeof(VertexType);
+  stride = sizeof(TerrainPatch);
   offset = 0;
 
   context->IASetVertexBuffers(0, 1, m_vertexBuffer.GetAddressOf(), &stride, &offset);
-  context->IASetIndexBuffer(m_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-  context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+  context->IASetIndexBuffer(m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
+  context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST); //  D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP
 
   context->PSSetShaderResources(0, 1, m_shaderResourceView.GetAddressOf());
   context->PSSetSamplers(0, 1, m_samplerState.GetAddressOf());
@@ -63,6 +73,85 @@ void World::Load16bHeightmap(ID3D11Device* device)
 
   dataFile.close();
 
+  m_numPatchesRows = ((m_worldHeight - 1) / m_cellsPerPatch) + 1;
+  m_numPatchesCols = ((m_worldWidth - 1) / m_cellsPerPatch) + 1;
+
+  vector<TerrainPatch> patchVertices(m_numPatchesRows * m_numPatchesCols);
+
+  // TUCNA - I really think I should take m_worldWidth - 1
+  float halfWidth = m_worldWidth / 2.0f;
+  float halfHeight = m_worldHeight/ 2.0f;
+
+  float patchWidth = (float)m_worldWidth / (m_numPatchesCols - 1);
+  float patchHeight = (float)m_worldHeight / (m_numPatchesRows - 1);
+
+  float du = 1.0f / (m_numPatchesCols - 1);
+  float dv = 1.0f / (m_numPatchesRows - 1);
+
+  for(uint16_t i = 0; i < m_numPatchesRows; i++)
+  {
+    float z = halfHeight - i * patchHeight;
+
+    for(uint16_t j = 0; j < m_numPatchesCols; j++)
+    {
+      float x = -halfWidth + j * patchWidth;
+
+      patchVertices[i * m_numPatchesCols + j].position = XMFLOAT3(x, 0.0f, z);
+
+      // Texture
+      patchVertices[i * m_numPatchesCols + j].texCoord = XMFLOAT2(j * du, i * dv);
+    }
+  }
+
+  D3D11_BUFFER_DESC vertexBufferDesc = {};
+  vertexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
+  vertexBufferDesc.ByteWidth = (UINT)(sizeof(TerrainPatch) * patchVertices.size());
+  vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+  vertexBufferDesc.CPUAccessFlags = 0;
+  vertexBufferDesc.MiscFlags = 0;
+  vertexBufferDesc.StructureByteStride = 0;
+
+  D3D11_SUBRESOURCE_DATA vertexData = {};
+  vertexData.pSysMem = patchVertices.data();
+
+  DX::ThrowIfFailed(device->CreateBuffer(&vertexBufferDesc, &vertexData, &m_vertexBuffer));
+
+  // Index buffer
+  uint32_t numPatchQuadFaces = (m_numPatchesRows - 1) * (m_numPatchesCols - 1);
+  vector<uint16_t> indices(numPatchQuadFaces * 4);
+
+  uint32_t k = 0;
+
+  for(uint16_t i = 0; i < m_numPatchesRows - 1; i++)
+  {
+    for(uint16_t j = 0; j < m_numPatchesCols - 1; j++)
+    {
+      indices[k + 0] = i * m_numPatchesCols + j;
+      indices[k + 1] = i * m_numPatchesCols + j + 1;
+
+      indices[k + 2] = (i + 1) * m_numPatchesCols + j;
+      indices[k + 3] = (i + 1) * m_numPatchesCols + j + 1;
+
+      k += 4;
+    }
+  }
+
+  D3D11_BUFFER_DESC indexBufferDesc = {};
+  indexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
+  indexBufferDesc.ByteWidth = (UINT)(sizeof(uint16_t) * indices.size());
+  indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+  indexBufferDesc.CPUAccessFlags = 0;
+  indexBufferDesc.MiscFlags = 0;
+  indexBufferDesc.StructureByteStride = 0;
+
+  D3D11_SUBRESOURCE_DATA indexData = {};
+  indexData.pSysMem = indices.data();
+
+  DX::ThrowIfFailed(device->CreateBuffer(&indexBufferDesc, &indexData, &m_indexBuffer));
+
+  m_indexCount = indices.size();
+
+  /*
   vector<VertexType> vertices;
   vector<uint32_t> indices;
 
@@ -122,36 +211,5 @@ void World::Load16bHeightmap(ID3D11Device* device)
       indices.push_back(lastIndex + 2);
       indices.push_back(lastIndex + 3);
     }
-
-  m_indexCount = indices.size();
-
-  D3D11_BUFFER_DESC vertexBufferDesc = {};
-  vertexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-  vertexBufferDesc.ByteWidth = (UINT)(sizeof(VertexType) * vertices.size());
-  vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-  vertexBufferDesc.CPUAccessFlags = 0;
-  vertexBufferDesc.MiscFlags = 0;
-  vertexBufferDesc.StructureByteStride = 0;
-
-  D3D11_SUBRESOURCE_DATA vertexData = {};
-  vertexData.pSysMem = vertices.data();
-  vertexData.SysMemPitch = 0;
-  vertexData.SysMemSlicePitch = 0;
-
-  DX::ThrowIfFailed(device->CreateBuffer(&vertexBufferDesc, &vertexData, &m_vertexBuffer));
-
-  D3D11_BUFFER_DESC indexBufferDesc = {};
-  indexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-  indexBufferDesc.ByteWidth = (UINT)(sizeof(uint32_t) * indices.size());
-  indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-  indexBufferDesc.CPUAccessFlags = 0;
-  indexBufferDesc.MiscFlags = 0;
-  indexBufferDesc.StructureByteStride = 0;
-
-  D3D11_SUBRESOURCE_DATA indexData = {};
-  indexData.pSysMem = indices.data();
-  indexData.SysMemPitch = 0;
-  indexData.SysMemSlicePitch = 0;
-
-  DX::ThrowIfFailed(device->CreateBuffer(&indexBufferDesc, &indexData, &m_indexBuffer));
+  */
 }

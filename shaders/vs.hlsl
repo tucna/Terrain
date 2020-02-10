@@ -20,11 +20,13 @@ struct PixelInputType
   float3 normal : NORMAL;
 };
 
+struct VertexOut
+{
+  float3 PosW : POSITION;
+  float2 tex : TEXCOORD0;
+};
 
-////////////////////////////////////////////////////////////////////////////////
-// Vertex Shader
-////////////////////////////////////////////////////////////////////////////////
-PixelInputType ColorVertexShader(VertexInputType input)
+/*PixelInputType*/ VertexOut ColorVertexShader(VertexInputType input)
 {
   PixelInputType output;
 
@@ -44,5 +46,11 @@ PixelInputType ColorVertexShader(VertexInputType input)
   // Store the input color for the pixel shader to use.
   output.texCoord = input.texCoord;
 
-  return output;
+  // New
+  VertexOut output_2;
+
+  output_2.PosW = input.position.xyz;
+  output_2.tex = float2(0, 0);
+
+  return output_2;
 }

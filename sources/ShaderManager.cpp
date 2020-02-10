@@ -1,88 +1,101 @@
 #include "pch.h"
+
+#include <string>
+
 #include "ShaderManager.h"
 
 using namespace DirectX;
+using namespace std;
+using namespace Microsoft::WRL;
 
 ShaderManager::ShaderManager(ID3D11Device* device)
 {
-  Microsoft::WRL::ComPtr<ID3DBlob> vertexShaderBuffer;
-  D3DCompileFromFile(L"shaders/vs.hlsl", NULL, NULL, "ColorVertexShader", "vs_5_0", D3DCOMPILE_DEBUG, 0, &vertexShaderBuffer, NULL);
-  device->CreateVertexShader(vertexShaderBuffer->GetBufferPointer(), vertexShaderBuffer->GetBufferSize(), NULL, &m_vertexShader);
+  auto loadShader = [&](ShaderType type, const wstring& path, const string& entryPoint, const string& target)
+  {
+    ComPtr<ID3DBlob> shaderBuffer;
+    ComPtr<ID3DBlob> errorBlob;
 
-  Microsoft::WRL::ComPtr<ID3DBlob> pixelShaderBuffer;
-  D3DCompileFromFile(L"shaders/ps.hlsl", NULL, NULL, "ColorPixelShader", "ps_5_0", D3DCOMPILE_DEBUG, 0, &pixelShaderBuffer, NULL);
-  device->CreatePixelShader(pixelShaderBuffer->GetBufferPointer(), pixelShaderBuffer->GetBufferSize(), NULL, &m_pixelShader);
+    UINT flags = 0;
 
-  D3D11_INPUT_ELEMENT_DESC polygonLayout[3];
-  polygonLayout[0].SemanticName = "POSITION";
-  polygonLayout[0].SemanticIndex = 0;
-  polygonLayout[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-  polygonLayout[0].InputSlot = 0;
-  polygonLayout[0].AlignedByteOffset = 0;
-  polygonLayout[0].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-  polygonLayout[0].InstanceDataStepRate = 0;
+#ifdef _DEBUG
+    flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+#endif
 
-  polygonLayout[1].SemanticName = "TEXCOORD";
-  polygonLayout[1].SemanticIndex = 0;
-  polygonLayout[1].Format = DXGI_FORMAT_R32G32_FLOAT;
-  polygonLayout[1].InputSlot = 0;
-  polygonLayout[1].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
-  polygonLayout[1].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-  polygonLayout[1].InstanceDataStepRate = 0;
+    HRESULT hr = D3DCompileFromFile(path.c_str(), NULL, NULL, entryPoint.c_str(), target.c_str(), flags, 0, &shaderBuffer, &errorBlob);
 
-  polygonLayout[2].SemanticName = "NORMAL";
-  polygonLayout[2].SemanticIndex = 0;
-  polygonLayout[2].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-  polygonLayout[2].InputSlot = 0;
-  polygonLayout[2].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
-  polygonLayout[2].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-  polygonLayout[2].InstanceDataStepRate = 0;
+    if (FAILED(hr) && errorBlob)
+      OutputDebugStringA((char*)errorBlob->GetBufferPointer());
 
-  // Get a count of the elements in the layout.
-  unsigned int numElements = sizeof(polygonLayout) / sizeof(polygonLayout[0]);
+    switch (type)
+    {
+    case ShaderType::Vertex:
+    {
+      DX::ThrowIfFailed(device->CreateVertexShader(shaderBuffer->GetBufferPointer(), shaderBuffer->GetBufferSize(), NULL, &m_vertexShader));
 
-  // Create the vertex input layout.
-  device->CreateInputLayout(polygonLayout, numElements, vertexShaderBuffer->GetBufferPointer(), vertexShaderBuffer->GetBufferSize(), &m_layout);
+      const D3D11_INPUT_ELEMENT_DESC polygonLayout[] =
+      {
+        { "POSITION",0,DXGI_FORMAT_R32G32B32_FLOAT,0,D3D11_APPEND_ALIGNED_ELEMENT,D3D11_INPUT_PER_VERTEX_DATA,0 },
+        { "TEXCOORD",0,DXGI_FORMAT_R32G32_FLOAT   ,0,D3D11_APPEND_ALIGNED_ELEMENT,D3D11_INPUT_PER_VERTEX_DATA,0 },
+        { "NORMAL"  ,0,DXGI_FORMAT_R32G32B32_FLOAT,0,D3D11_APPEND_ALIGNED_ELEMENT,D3D11_INPUT_PER_VERTEX_DATA,0 }
+      };
+
+      // Create the vertex input layout.
+      DX::ThrowIfFailed(device->CreateInputLayout(polygonLayout, (UINT)size(polygonLayout), shaderBuffer->GetBufferPointer(), shaderBuffer->GetBufferSize(), &m_layout));
+
+      break;
+    }
+    case ShaderType::Hull:
+      DX::ThrowIfFailed(device->CreateHullShader(shaderBuffer->GetBufferPointer(), shaderBuffer->GetBufferSize(), NULL, &m_hullShader));
+      break;
+    case ShaderType::Domain:
+      DX::ThrowIfFailed(device->CreateDomainShader(shaderBuffer->GetBufferPointer(), shaderBuffer->GetBufferSize(), NULL, &m_domainShader));
+      break;
+    case ShaderType::Pixel:
+      DX::ThrowIfFailed(device->CreatePixelShader(shaderBuffer->GetBufferPointer(), shaderBuffer->GetBufferSize(), NULL, &m_pixelShader));
+      break;
+    default:
+      break;
+    };
+  };
+
+  loadShader(ShaderType::Vertex, L"shaders/vs.hlsl", "ColorVertexShader", "vs_5_0");
+  loadShader(ShaderType::Hull, L"shaders/hs.hlsl", "HS", "hs_5_0");
+  loadShader(ShaderType::Domain, L"shaders/ds.hlsl", "DS", "ds_5_0");
+  loadShader(ShaderType::Pixel, L"shaders/ps.hlsl", "ColorPixelShader", "ps_5_0");
 
   D3D11_BUFFER_DESC matrixBufferDesc = {};
   matrixBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-  matrixBufferDesc.ByteWidth = sizeof(MatrixBufferType);
+  matrixBufferDesc.ByteWidth = sizeof(MatrixBuffer);
   matrixBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
   matrixBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
   matrixBufferDesc.MiscFlags = 0;
   matrixBufferDesc.StructureByteStride = 0;
 
   // Create the constant buffer pointer so we can access the vertex shader constant buffer from within this class.
-  device->CreateBuffer(&matrixBufferDesc, NULL, &m_matrixBuffer);
+  DX::ThrowIfFailed(device->CreateBuffer(&matrixBufferDesc, NULL, &m_matrixBuffer));
 }
 
 void ShaderManager::ApplyColorShader(ID3D11DeviceContext* context, size_t indexCount, XMMATRIX worldMatrix, XMMATRIX viewMatrix, XMMATRIX projectionMatrix)
 {
-  // Lock the matrix constant buffer so it can be written to.
   D3D11_MAPPED_SUBRESOURCE mappedResource = {};
-  context->Map(m_matrixBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource); // TUCNA HR
 
-  // Get a pointer to the data in the matrix constant buffer.
-  MatrixBufferType* dataPtr = (MatrixBufferType*)mappedResource.pData;
+  context->Map(m_matrixBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource); // TUCNA HR
+  MatrixBuffer* dataPtr = (MatrixBuffer*)mappedResource.pData;
 
   // Copy the matrices into the matrix constant buffer.
   dataPtr->world = worldMatrix;
   dataPtr->view = viewMatrix;
   dataPtr->projection = projectionMatrix;
 
-  // Unlock the matrix constant buffer.
   context->Unmap(m_matrixBuffer.Get(), 0);
 
-  // Finanly set the matrix constant buffer in the vertex shader with the updated values.
-  context->VSSetConstantBuffers(0, 1, m_matrixBuffer.GetAddressOf());
-
-  // Set the vertex input layout.
+  context->DSSetConstantBuffers(0, 1, m_matrixBuffer.GetAddressOf());
   context->IASetInputLayout(m_layout.Get());
-
-  // Set the vertex and pixel shaders that will be used to do the rendering.
   context->VSSetShader(m_vertexShader.Get(), NULL, 0);
+  context->HSSetShader(m_hullShader.Get(), NULL, 0);
+  context->DSSetShader(m_domainShader.Get(), NULL, 0);
   context->PSSetShader(m_pixelShader.Get(), NULL, 0);
 
-  // Render the data.
+  // Render the data
   context->DrawIndexed((UINT)indexCount, 0, 0);
 }

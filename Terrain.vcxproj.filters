@@ -32,6 +32,7 @@
       <Filter>Sources</Filter>
     </ClInclude>
     <ClInclude Include="sources\stb_image.h" />
+    <ClInclude Include="shaders\Common.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="sources\Camera.cpp">

@@ -159,6 +159,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="shaders\Common.h" />
     <ClInclude Include="sources\Camera.h" />
     <ClInclude Include="sources\Game.h" />
     <ClInclude Include="sources\pch.h" />

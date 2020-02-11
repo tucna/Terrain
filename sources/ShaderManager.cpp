@@ -21,7 +21,7 @@ ShaderManager::ShaderManager(ID3D11Device* device)
     flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
 #endif
 
-    HRESULT hr = D3DCompileFromFile(path.c_str(), NULL, NULL, entryPoint.c_str(), target.c_str(), flags, 0, &shaderBuffer, &errorBlob);
+    HRESULT hr = D3DCompileFromFile(path.c_str(), NULL, D3D_COMPILE_STANDARD_FILE_INCLUDE, entryPoint.c_str(), target.c_str(), flags, 0, &shaderBuffer, &errorBlob);
 
     if (FAILED(hr) && errorBlob)
       OutputDebugStringA((char*)errorBlob->GetBufferPointer());
@@ -54,14 +54,15 @@ ShaderManager::ShaderManager(ID3D11Device* device)
       DX::ThrowIfFailed(device->CreatePixelShader(shaderBuffer->GetBufferPointer(), shaderBuffer->GetBufferSize(), NULL, &m_pixelShader));
       break;
     default:
+      OutputDebugStringA("Unsupported shader!");
       break;
     };
   };
 
-  loadShader(ShaderType::Vertex, L"shaders/vs.hlsl", "ColorVertexShader", "vs_5_0");
+  loadShader(ShaderType::Vertex, L"shaders/vs.hlsl", "VS", "vs_5_0");
   loadShader(ShaderType::Hull, L"shaders/hs.hlsl", "HS", "hs_5_0");
   loadShader(ShaderType::Domain, L"shaders/ds.hlsl", "DS", "ds_5_0");
-  loadShader(ShaderType::Pixel, L"shaders/ps.hlsl", "ColorPixelShader", "ps_5_0");
+  loadShader(ShaderType::Pixel, L"shaders/ps.hlsl", "PS", "ps_5_0");
 
   D3D11_BUFFER_DESC matrixBufferDesc = {};
   matrixBufferDesc.Usage = D3D11_USAGE_DYNAMIC;

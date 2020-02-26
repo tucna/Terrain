@@ -19,6 +19,7 @@ World::World(ID3D11Device* device, ID3D11DeviceContext* context) :
   m_numPatchesCols(0),
   m_numPatchesRows(0)
 {
+  // TUCNA - this is probably wrong - must be handled in the shader
   Load16bHeightmap(device);
 
   // Texture
@@ -57,7 +58,7 @@ void World::Draw(ID3D11DeviceContext* context)
 
   context->IASetVertexBuffers(0, 1, m_vertexBuffer.GetAddressOf(), &stride, &offset);
   context->IASetIndexBuffer(m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
-  context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST); //  D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP
+  context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST);
 
   context->PSSetShaderResources(0, 1, m_shaderResourceView.GetAddressOf());
   context->PSSetSamplers(0, 1, m_samplerState.GetAddressOf());

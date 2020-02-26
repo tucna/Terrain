@@ -13,15 +13,6 @@ public:
   size_t GetIndexCount() { return m_indexCount; }
 
 private:
-  /*
-  struct VertexType
-  {
-    DirectX::XMFLOAT3 position;
-    DirectX::XMFLOAT2 texCoord;
-    DirectX::XMFLOAT3 normal;
-  };
-  */
-
   struct TerrainPatch
   {
     DirectX::XMFLOAT3 position;
